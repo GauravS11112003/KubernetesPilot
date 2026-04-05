@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KubePilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:         #f0f4f9;
+  --surface:    #ffffff;
+  --surface-hi: #f8f9fb;
+  --border:     #dfe3ea;
+  --border-hi:  #c8cdd5;
+  --text:       #1f1f1f;
+  --text-sec:   #5f6368;
+  --text-dim:   #9aa0a6;
+  --blue:       #4285F4;
+  --violet:     #A142F4;
+  --red:        #EA4335;
+  --amber:      #F9AB00;
+  --green:      #34A853;
+  --code-bg:    #f1f3f5;
+  --code-text:  #1a73e8;
+  --gradient:   linear-gradient(135deg, #4285F4, #A142F4);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:  0 8px 30px rgba(0,0,0,.12);
+  --font-mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans:  "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius:     16px;
+  --radius-sm:  10px;
+  --radius-xs:  6px;
+}
+
+html{ scroll-behavior: smooth; }
+
+body{
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+header{
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 32px; height: 60px;
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--border);
+}
+.logo{
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 1.1rem;
+  letter-spacing: -.3px;
+}
+.logo-icon{
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-icon svg{ width: 16px; height: 16px; color: #fff; }
+.logo-text{
+  background: var(--gradient);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.header-sub{ color: var(--text-dim); font-size: .82rem; font-weight: 500; }
+.header-spacer{ flex:1; }
+.header-actions{ display: flex; align-items: center; gap: 8px; }
+
+.pill{
+  display: flex; align-items: center; gap: 6px;
+  font-size: .76rem; font-weight: 500;
+  color: var(--text-sec);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+.pill strong{ color: var(--text); font-family: var(--font-mono); font-size: .78rem; }
+.dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); flex-shrink: 0;
+}
+.dot.pulse{ animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse{ 0%,100%{opacity:.3} 50%{opacity:1} }
+
+.btn-icon{
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-sec); cursor: pointer;
+  transition: all .15s;
+}
+.btn-icon:hover{ background: var(--bg); color: var(--text); border-color: var(--border-hi); }
+.btn-icon svg{ width: 16px; height: 16px; }
+
+/* ================================================================
+   METRICS STRIP
+   ================================================================ */
+.metrics{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 24px 32px 0;
+  max-width: 1400px; margin: 0 auto;
+}
+@media(max-width: 800px){ .metrics{ grid-template-columns: repeat(2,1fr); } }
+
+.metric-card{
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.metric-label{
+  font-size: .7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-dim);
+}
+.metric-value{
+  font-family: var(--font-mono); font-weight: 700;
+  font-size: 1.75rem; line-height: 1;
+}
+.metric-sub{ font-size: .74rem; color: var(--text-sec); }
+.metric-card.danger .metric-value{ color: var(--red); }
+.metric-card.warn .metric-value{ color: var(--amber); }
+.metric-card.ok .metric-value{ color: var(--green); }
+.metric-card.info .metric-value{ color: var(--blue); }
+
+/* ================================================================
+   TOOLBAR
+   ================================================================ */
+.toolbar{
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 18px 32px;
+  max-width: 1400px; margin: 0 auto;
+}
+.search-box{
+  position: relative; flex: 1; min-width: 220px;
+}
+.search-box input{
+  width: 100%; padding: 10px 16px 10px 40px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  font-family: var(--font-sans); font-size: .87rem;
+  outline: none; box-shadow: var(--shadow-sm);
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-box input::placeholder{ color: var(--text-dim); }
+.search-box input:focus{ border-color: var(--blue); box-shadow: 0 0 0 3px rgba(66,133,244,.12); }
+.search-box svg{
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--text-dim); pointer-events: none;
+}
+
+.filter-chips{ display: flex; gap: 6px; flex-wrap: wrap; }
+.chip{
+  font-size: .76rem; font-weight: 600;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-sec);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.chip:hover{ border-color: var(--border-hi); background: var(--surface-hi); }
+.chip.active{ border-color: var(--blue); color: var(--blue); background: rgba(66,133,244,.06); }
+.chip .chip-count{
+  display: inline-block; min-width: 18px; height: 18px;
+  text-align: center; line-height: 18px;
+  border-radius: 999px; font-size: .65rem; font-weight: 700;
+  background: var(--bg); color: var(--text-sec);
+  margin-left: 5px;
+}
+.chip.active .chip-count{ background: rgba(66,133,244,.1); color: var(--blue); }
+
+/* ================================================================
+   ISSUE LIST (main view)
+   ================================================================ */
+.list-container{
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+.issue-list{
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.issue-row{
+  display: grid;
+  grid-template-columns: 10px 140px 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .12s;
+  position: relative;
+}
+.issue-row:last-child{ border-bottom: none; }
+.issue-row:hover{ background: var(--surface-hi); }
+.issue-row.fixed-row{ opacity: .55; }
+
+.issue-row .severity-dot{
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.severity-dot.crash{ background: var(--red); }
+.severity-dot.image{ background: var(--amber); }
+.severity-dot.other{ background: var(--blue); }
+
+.issue-row .badge{
+  font-family: var(--font-mono);
+  font-size: .68rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 6px;
+  text-transform: uppercase; letter-spacing: .3px;
+  white-space: nowrap; text-align: center;
+}
+.badge.crash{ background: rgba(234,67,53,.08); color: var(--red); }
+.badge.image{ background: rgba(249,171,0,.08); color: #e09200; }
+.badge.other{ background: rgba(66,133,244,.08); color: var(--blue); }
+
+.issue-info{
+  display: flex; flex-direction: column; gap: 2px;
+  overflow: hidden;
+}
+.issue-pod{
+  font-family: var(--font-mono);
+  font-weight: 600; font-size: .84rem;
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.issue-excerpt{
+  font-size: .76rem; color: var(--text-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 600px;
+}
+
+.issue-time{
+  font-family: var(--font-mono);
+  font-size: .72rem; color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.issue-arrow{
+  color: var(--text-dim);
+  display: flex; align-items: center;
+  transition: transform .15s;
+}
+.issue-row:hover .issue-arrow{ transform: translateX(3px); color: var(--blue); }
+.issue-arrow svg{ width: 16px; height: 16px; }
+
+.issue-fixed-tag{
+  display: none;
+  font-size: .65rem; font-weight: 700;
+  color: var(--green); text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.issue-row.fixed-row .issue-fixed-tag{ display: flex; align-items: center; gap: 3px; }
+.issue-row.fixed-row .issue-time{ display: none; }
+
+.issue-row.hidden{ display: none; }
+
+@media(max-width: 700px){
+  .issue-row{
+    grid-template-columns: 10px 90px 1fr auto;
+    gap: 10px; padding: 12px 14px;
+  }
+  .issue-time{ display: none; }
+}
+
+/* ================================================================
+   DETAIL VIEW (drill-down)
+   ================================================================ */
+.detail-view{
+  display: none;
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 32px 80px;
+}
+.detail-view.active{ display: block; }
+
+.detail-back{
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .84rem; font-weight: 600;
+  color: var(--text-sec);
+  cursor: pointer; border: none; background: none;
+  padding: 8px 0; margin-bottom: 16px;
+  transition: color .15s;
+  font-family: var(--font-sans);
+}
+.detail-back:hover{ color: var(--blue); }
+.detail-back svg{ width: 18px; height: 18px; }
+
+.detail-header{
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.detail-header .severity-dot{ width: 12px; height: 12px; border-radius: 50%; }
+.detail-header .badge{ font-size: .75rem; padding: 5px 12px; }
+.detail-pod-name{
+  font-family: var(--font-mono);
+  font-size: 1.15rem; font-weight: 700;
+}
+.detail-ts{
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: .78rem; color: var(--text-dim);
+}
+
+.detail-grid{
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+@media(max-width: 900px){ .detail-grid{ grid-template-columns: 1fr; } }
+
+.detail-panel{
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.panel-header{
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .7px;
+  color: var(--text-dim);
+}
+.panel-header svg{ width: 14px; height: 14px; }
+
+.panel-body{ padding: 20px; }
+
+/* diagnosis */
+.diagnosis-content{
+  font-size: .87rem; line-height: 1.8;
+  color: var(--text);
+}
+.diagnosis-content h2{
+  font-size: .92rem; font-weight: 700;
+  margin: 14px 0 6px; color: var(--text);
+}
+.diagnosis-content h2:first-child{ margin-top: 0; }
+.diagnosis-content p{ margin-bottom: 8px; }
+.diagnosis-content p:last-child{ margin-bottom: 0; }
+.diagnosis-content strong{ color: var(--text); font-weight: 600; }
+.diagnosis-content code{
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--code-text);
+}
+.diagnosis-content pre{
+  margin: 10px 0;
+  border-radius: var(--radius-xs);
+  overflow-x: auto;
+}
+.diagnosis-content pre code{
+  display: block;
+  padding: 12px 14px;
+  background: #1e1e2e;
+  border-radius: var(--radius-xs);
+  font-size: .77rem;
+  line-height: 1.6;
+  color: #cdd6f4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.error-msg{
+  padding: 12px 14px;
+  background: rgba(234,67,53,.06);
+  border: 1px solid rgba(234,67,53,.15);
+  border-radius: var(--radius-xs);
+  font-size: .84rem;
+  color: var(--red);
+  line-height: 1.6;
+}
+
+/* right sidebar: fix + console */
+.sidebar-stack{
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.cmd-block{
+  display: flex; align-items: stretch;
+  background: #1e1e2e;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.cmd-block + .cmd-block{ margin-top: 8px; }
+.cmd-text{
+  flex: 1; padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: .75rem; line-height: 1.5;
+  color: #89b4fa;
+  white-space: pre-wrap; word-break: break-all;
+}
+.cmd-actions{
+  display: flex; flex-direction: column;
+  border-left: 1px solid rgba(255,255,255,.08);
+}
+.cmd-btn{
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 10px; flex: 1;
+  border: none;
+  color: rgba(255,255,255,.5);
+  cursor: pointer;
+  transition: all .15s;
+  background: transparent;
+}
+.cmd-btn:hover{ background: rgba(255,255,255,.06); color: #fff; }
+.cmd-btn + .cmd-btn{ border-top: 1px solid rgba(255,255,255,.08); }
+.cmd-btn svg{ width: 14px; height: 14px; }
+.cmd-btn.copied{ color: var(--green); }
+
+.fix-btn{
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 10px 16px;
+  border: none; border-radius: var(--radius-xs);
+  background: var(--gradient);
+  color: #fff; font-family: var(--font-sans);
+  font-size: .84rem; font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s, transform .15s;
+  box-shadow: 0 2px 8px rgba(66,133,244,.25);
+}
+.fix-btn:hover{ opacity: .9; transform: translateY(-1px); }
+.fix-btn:active{ transform: translateY(0); }
+.fix-btn:disabled{ opacity: .5; cursor: not-allowed; transform: none; }
+.fix-btn svg{ width: 16px; height: 16px; }
+.fix-btn .spinner{
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+.fix-result{
+  padding: 10px 12px;
+  border-radius: var(--radius-xs);
+  font-size: .78rem;
+  line-height: 1.5;
+  font-family: var(--font-mono);
+  margin-top: 8px;
+  animation: fadeIn .2s ease-out;
+}
+.fix-result.success{
+  background: rgba(52,168,83,.06);
+  border: 1px solid rgba(52,168,83,.2);
+  color: var(--green);
+}
+.fix-result.failure{
+  background: rgba(234,67,53,.06);
+  border: 1px solid rgba(234,67,53,.15);
+  color: var(--red);
+}
+.fix-result pre{
+  margin-top: 6px; padding: 8px;
+  background: rgba(0,0,0,.03);
+  border-radius: 4px;
+  font-size: .72rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.no-fix{
+  text-align: center;
+  padding: 16px 12px;
+  color: var(--text-dim);
+  font-size: .82rem;
+}
+
+/* console panel */
+.console-panel{
+  background: #1e1e2e;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.console-header{
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .7px;
+  color: rgba(255,255,255,.45);
+}
+.console-header svg{ width: 14px; height: 14px; }
+.console-header .console-dots{
+  display: flex; gap: 5px; margin-right: 6px;
+}
+.console-dot{
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.console-dot:nth-child(1){ background: #ff5f56; }
+.console-dot:nth-child(2){ background: #ffbd2e; }
+.console-dot:nth-child(3){ background: #27c93f; }
+
+.console-output{
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: .75rem; line-height: 1.7;
+  color: #cdd6f4;
+  max-height: 300px;
+  overflow-y: auto;
+  min-height: 80px;
+}
+.console-output .con-success{ color: #a6e3a1; }
+.console-output .con-error{ color: #f38ba8; }
+.console-output .con-info{ color: #89b4fa; }
+.console-output .con-dim{ color: rgba(255,255,255,.35); }
+
+.console-input-row{
+  display: flex; align-items: center;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 0 16px;
+}
+.console-prompt{
+  color: #a6e3a1; font-family: var(--font-mono);
+  font-size: .78rem; font-weight: 600;
+  margin-right: 8px; flex-shrink: 0;
+}
+.console-input{
+  flex: 1; border: none; background: transparent;
+  color: #cdd6f4; font-family: var(--font-mono);
+  font-size: .78rem; padding: 12px 0;
+  outline: none;
+}
+.console-input::placeholder{ color: rgba(255,255,255,.25); }
+
+/* events section in detail */
+.events-section{ margin-top: 16px; }
+.events-toggle{
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 12px 20px;
+  border: none; background: var(--surface-hi);
+  border-radius: var(--radius-sm);
+  color: var(--text-sec);
+  font-family: var(--font-sans);
+  font-size: .78rem; font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  box-shadow: var(--shadow-sm);
+}
+.events-toggle:hover{ background: var(--surface); color: var(--text); }
+.events-toggle svg{ width: 14px; height: 14px; transition: transform .2s; }
+.events-toggle.open svg{ transform: rotate(180deg); }
+
+.events-body{
+  display: none;
+  background: var(--surface);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  margin-top: -4px;
+  padding: 14px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.events-body.open{ display: block; }
+
+.evt-row{
+  display: grid;
+  grid-template-columns: 100px 90px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0,0,0,.04);
+  line-height: 1.5;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+}
+.evt-row:last-child{ border-bottom: none; }
+.evt-time{ color: var(--text-dim); white-space: nowrap; font-size: .68rem; }
+.evt-reason{ color: #e09200; font-weight: 600; font-size: .68rem; }
+.evt-msg{ color: var(--text-sec); word-break: break-word; font-size: .68rem; }
+
+/* ================================================================
+   EMPTY STATE
+   ================================================================ */
+.empty-state{
+  text-align: center;
+  padding: 80px 20px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.empty-icon{ margin-bottom: 16px; }
+.empty-icon svg{
+  width: 56px; height: 56px;
+  stroke: var(--border-hi); stroke-width: 1.2;
+}
+.empty-state .big{
+  font-size: 1.1rem; font-weight: 600;
+  color: var(--text-sec);
+  margin-bottom: 8px;
+}
+.empty-state .sub{ font-size: .88rem; color: var(--text-dim); max-width: 400px; margin: 0 auto; }
+
+/* ================================================================
+   CONFIRMATION MODAL
+   ================================================================ */
+.modal-overlay{
+  display: none;
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.35);
+  backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open{ display: flex; }
+
+.modal{
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  width: 90%; max-width: 520px;
+  animation: modalIn .2s ease-out;
+  overflow: hidden;
+}
+@keyframes modalIn{
+  from{ opacity:0; transform: scale(.95) translateY(10px); }
+  to{ opacity:1; transform: scale(1) translateY(0); }
+}
+.modal-header{
+  padding: 20px 24px 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.modal-header .modal-icon{
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--gradient);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.modal-header .modal-icon svg{ width: 18px; height: 18px; color: #fff; }
+.modal-title{ font-size: 1rem; font-weight: 700; }
+.modal-desc{ font-size: .84rem; color: var(--text-sec); }
+
+.modal-body{ padding: 0 24px 20px; }
+
+.modal-cmd{
+  padding: 12px 14px;
+  background: #1e1e2e;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  color: #89b4fa;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.modal-warn{
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(249,171,0,.06);
+  border: 1px solid rgba(249,171,0,.15);
+  border-radius: var(--radius-xs);
+  font-size: .8rem;
+  color: #b07800;
+  display: flex; align-items: start; gap: 8px;
+}
+.modal-warn svg{ width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+.modal-footer{
+  padding: 16px 24px;
+  background: var(--surface-hi);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+.btn-secondary{
+  padding: 9px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-sec);
+  font-family: var(--font-sans);
+  font-size: .84rem; font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-secondary:hover{ background: var(--bg); color: var(--text); }
+
+.btn-primary{
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: var(--gradient);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: .84rem; font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+  box-shadow: 0 2px 8px rgba(66,133,244,.2);
+}
+.btn-primary:hover{ opacity: .9; }
+.btn-primary:disabled{ opacity: .5; cursor: not-allowed; }
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+.toast-container{
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 200;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast{
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: .82rem;
+  box-shadow: var(--shadow-md);
+  animation: toastIn .3s ease-out;
+  cursor: pointer; max-width: 360px;
+}
+.toast:hover{ border-color: var(--border-hi); }
+.toast .toast-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.toast .toast-dot.crash{ background: var(--red); }
+.toast .toast-dot.image{ background: var(--amber); }
+@keyframes toastIn{
+  from{ opacity:0; transform:translateY(12px) scale(.96); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes toastOut{ to{ opacity:0; transform:translateX(20px); } }
+@keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+
+::-webkit-scrollbar{ width: 5px; height: 5px; }
+::-webkit-scrollbar-track{ background: transparent; }
+::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--border-hi); }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">
+    <span class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+    </span>
+    <span class="logo-text">KubePilot</span>
+  </span>
+  <span class="header-sub">AI Kubernetes Troubleshooting</span>
+  <span class="header-spacer"></span>
+  <div class="header-actions">
+    <span class="pill">Namespace: <strong id="nsLabel">default</strong></span>
+    <span class="pill"><span class="dot pulse" id="statusDot"></span><span id="statusText">connecting</span></span>
+    <button class="btn-icon" id="soundBtn" title="Toggle notification sound">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="metrics">
+  <div class="metric-card danger">
+    <span class="metric-label">Total Failures</span>
+    <span class="metric-value" id="mTotal">0</span>
+    <span class="metric-sub" id="mTotalSub">No diagnoses yet</span>
+  </div>
+  <div class="metric-card warn">
+    <span class="metric-label">Image Pull Errors</span>
+    <span class="metric-value" id="mImage">0</span>
+    <span class="metric-sub">ErrImagePull / ImagePullBackOff</span>
+  </div>
+  <div class="metric-card danger">
+    <span class="metric-label">Crash Loops</span>
+    <span class="metric-value" id="mCrash">0</span>
+    <span class="metric-sub">CrashLoopBackOff / RunContainerError</span>
+  </div>
+  <div class="metric-card info">
+    <span class="metric-label">Unique Pods</span>
+    <span class="metric-value" id="mPods">0</span>
+    <span class="metric-sub" id="mPodsSub">Across all deployments</span>
+  </div>
+</div>
+
+<!-- TOOLBAR (only visible in list view) -->
+<div class="toolbar" id="toolbar">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="Search pods, reasons, diagnoses...">
+  </div>
+  <div class="filter-chips">
+    <span class="chip active" data-filter="all">All <span class="chip-count" id="chipAll">0</span></span>
+    <span class="chip" data-filter="image">ImagePull <span class="chip-count" id="chipImage">0</span></span>
+    <span class="chip" data-filter="crash">CrashLoop <span class="chip-count" id="chipCrash">0</span></span>
+    <span class="chip" data-filter="other">Other <span class="chip-count" id="chipOther">0</span></span>
+  </div>
+</div>
+
+<!-- LIST VIEW -->
+<div class="list-container" id="listView">
+  <div class="issue-list" id="issueList">
+    <div class="empty-state" id="empty">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <p class="big" id="emptyTitle">Waiting for failures&hellip;</p>
+      <p class="sub" id="emptySub">Deploy a broken workload and AI diagnoses will stream here in real time.</p>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL VIEW (hidden by default) -->
+<div class="detail-view" id="detailView">
+  <button class="detail-back" id="detailBack">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to issues
+  </button>
+
+  <div class="detail-header" id="detailHeader"></div>
+
+  <div class="detail-grid">
+    <div>
+      <div class="detail-panel">
+        <div class="panel-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          AI Diagnosis
+        </div>
+        <div class="panel-body" id="detailDiagnosis"></div>
+      </div>
+
+      <div class="events-section" id="detailEventsSection" style="display:none">
+        <button class="events-toggle" id="detailEventsToggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          <span id="detailEventsLabel">Show cluster events</span>
+        </button>
+        <div class="events-body" id="detailEventsBody"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-stack">
+      <div class="detail-panel">
+        <div class="panel-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Suggested Fix
+        </div>
+        <div class="panel-body" id="detailFix"></div>
+      </div>
+
+      <div class="console-panel">
+        <div class="console-header">
+          <span class="console-dots"><span class="console-dot"></span><span class="console-dot"></span><span class="console-dot"></span></span>
+          Console
+        </div>
+        <div class="console-output" id="consoleOutput">
+          <div class="con-dim">Run a fix command or type kubectl commands below...</div>
+        </div>
+        <div class="console-input-row">
+          <span class="console-prompt">$</span>
+          <input type="text" class="console-input" id="consoleInput" placeholder="kubectl get pods -n default" spellcheck="false">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      </div>
+      <div>
+        <div class="modal-title">Apply Fix</div>
+        <div class="modal-desc">This command will be executed against your cluster.</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-cmd" id="modalCmd"></div>
+      <div class="modal-warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>This will modify resources in your cluster. Make sure you understand what this command does.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modalCancel">Cancel</button>
+      <button class="btn-primary" id="modalConfirm">Execute Fix</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+(function(){
+  const allDiagnoses = [];
+  const podSet = new Set();
+  const fixedSet = new Set();
+  let activeFilter = "all";
+  let searchQuery = "";
+  let soundEnabled = false;
+  let pendingFixCmd = null;
+  let pendingFixBtn = null;
+  let currentDetailIdx = -1;
+
+  const $ = id => document.getElementById(id);
+  const issueList   = $("issueList");
+  const empty       = $("empty");
+  const listView    = $("listView");
+  const detailView  = $("detailView");
+  const toolbar     = $("toolbar");
+  const toasts      = $("toasts");
+  const dot         = $("statusDot");
+  const statusTx    = $("statusText");
+  const searchIn    = $("searchInput");
+  const consoleOut  = $("consoleOutput");
+  const consoleIn   = $("consoleInput");
+
+  if(window.marked) marked.setOptions({ breaks: true, gfm: true });
+
+  function esc(s){
+    if(!s) return "";
+    const el = document.createElement("span");
+    el.textContent = s;
+    return el.innerHTML;
+  }
+
+  function classify(reason){
+    const r = (reason||"").toLowerCase();
+    if(r.includes("crash") || r.includes("error") || r.includes("failed")) return "crash";
+    if(r.includes("image") || r.includes("pull")) return "image";
+    return "other";
+  }
+
+  function timeAgo(iso){
+    try{
+      const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+      if(diff < 60) return "just now";
+      if(diff < 3600) return Math.floor(diff/60) + "m ago";
+      if(diff < 86400) return Math.floor(diff/3600) + "h ago";
+      return Math.floor(diff/86400) + "d ago";
+    } catch(e){ return iso; }
+  }
+
+  function fullTime(iso){
+    try{
+      const d = new Date(iso);
+      return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"})
+        + " on " + d.toLocaleDateString([], {month:"short", day:"numeric", year:"numeric"});
+    } catch(e){ return iso; }
+  }
+
+  function extractCommands(text){
+    const cmds = [];
+    const re = /`{1,3}(?:bash|sh|shell)?\n?((?:kubectl|helm|docker|terraform|kind)\s[^`]+)`{1,3}/gi;
+    let m;
+    while((m = re.exec(text)) !== null) cmds.push(m[1].trim());
+    if(!cmds.length){
+      const simple = /(?:^|\n)\s*((?:kubectl|helm)\s+[^\n]+)/gi;
+      while((m = simple.exec(text)) !== null) cmds.push(m[1].trim());
+    }
+    return [...new Set(cmds)];
+  }
+
+  function renderMarkdown(text){
+    if(!text) return "";
+    if(window.marked) return marked.parse(text);
+    return "<p>" + esc(text).replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>") + "</p>";
+  }
+
+  function parseEvents(raw){
+    if(!raw || raw === "No events found for this pod.") return [];
+    return raw.split("\n").filter(Boolean).map(line => {
+      const m = line.match(/^\[(.+?)\]\s*(\w+):\s*(.+)$/);
+      if(m) return { time: m[1], reason: m[2], message: m[3] };
+      return { time: "", reason: "", message: line };
+    });
+  }
+
+  function getExcerpt(text, max){
+    if(!text) return "No diagnosis available";
+    const plain = text.replace(/[#*`_~\[\]()>]/g, "").replace(/\n+/g, " ").trim();
+    return plain.length > max ? plain.slice(0, max) + "..." : plain;
+  }
+
+  const COPY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+  const PLAY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  const ARROW_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+  function copyToClipboard(text, btn){
+    navigator.clipboard.writeText(text).then(() => {
+      btn.innerHTML = CHECK_SVG;
+      btn.classList.add("copied");
+      setTimeout(() => { btn.innerHTML = COPY_SVG; btn.classList.remove("copied"); }, 1500);
+    });
+  }
+
+  /* ---- metrics ---- */
+  function updateMetrics(){
+    const total = allDiagnoses.length;
+    let imgCount = 0, crashCount = 0, otherCount = 0;
+    allDiagnoses.forEach(d => {
+      const c = classify(d.reason);
+      if(c === "image") imgCount++;
+      else if(c === "crash") crashCount++;
+      else otherCount++;
+    });
+    $("mTotal").textContent = total;
+    $("mTotalSub").textContent = total === 1 ? "1 diagnosis generated" : total + " diagnoses generated";
+    $("mImage").textContent = imgCount;
+    $("mCrash").textContent = crashCount;
+    $("mPods").textContent = podSet.size;
+    $("mPodsSub").textContent = podSet.size === 1 ? "1 unique pod" : podSet.size + " unique pods";
+    $("chipAll").textContent = total;
+    $("chipImage").textContent = imgCount;
+    $("chipCrash").textContent = crashCount;
+    $("chipOther").textContent = otherCount;
+  }
+
+  /* ---- view switching ---- */
+  function showListView(){
+    listView.style.display = "";
+    toolbar.style.display = "";
+    detailView.classList.remove("active");
+    currentDetailIdx = -1;
+    window.scrollTo({ top: 0 });
+  }
+
+  function showDetailView(idx){
+    const d = allDiagnoses[idx];
+    if(!d) return;
+    currentDetailIdx = idx;
+
+    listView.style.display = "none";
+    toolbar.style.display = "none";
+    detailView.classList.add("active");
+
+    const cls = classify(d.reason);
+    const cmds = extractCommands(d.diagnosis || "");
+    const events = parseEvents(d.events);
+    const isFixed = fixedSet.has(idx);
+
+    // header
+    $("detailHeader").innerHTML = `
+      <span class="severity-dot ${cls}"></span>
+      <span class="badge ${cls}">${esc(d.reason)}</span>
+      <span class="detail-pod-name">${esc(d.pod_name)}</span>
+      ${isFixed ? '<span style="color:var(--green);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:4px">' + CHECK_SVG + ' Fixed</span>' : ''}
+      <span class="detail-ts" title="${fullTime(d.timestamp)}">${fullTime(d.timestamp)}</span>
+    `;
+
+    // diagnosis
+    if(d.diagnosis && d.diagnosis.startsWith("[error]")){
+      $("detailDiagnosis").innerHTML = `<div class="error-msg">${esc(d.diagnosis)}</div>`;
+    } else {
+      $("detailDiagnosis").innerHTML = `<div class="diagnosis-content">${renderMarkdown(d.diagnosis || "No diagnosis available.")}</div>`;
+    }
+
+    // fix sidebar
+    if(cmds.length){
+      const cmdBlocks = cmds.map(c =>
+        `<div class="cmd-block"><span class="cmd-text">${esc(c)}</span><div class="cmd-actions"><button class="cmd-btn cmd-copy-btn" title="Copy" data-cmd="${esc(c)}">${COPY_SVG}</button><button class="cmd-btn cmd-run-btn" title="Execute" data-cmd="${esc(c)}">${PLAY_SVG}</button></div></div>`
+      ).join("");
+      $("detailFix").innerHTML = `
+        ${cmdBlocks}
+        <div style="margin-top:10px">
+          <button class="fix-btn" id="detailFixBtn" data-cmd="${esc(cmds[0])}" ${isFixed ? 'disabled' : ''}>
+            ${isFixed ? CHECK_SVG + ' Fixed' : PLAY_SVG + ' Fix Now'}
+          </button>
+        </div>
+        <div id="detailFixResult"></div>
+      `;
+    } else {
+      $("detailFix").innerHTML = `<div class="no-fix"><p>No auto-fix command detected in diagnosis.</p></div>`;
+    }
+
+    // wire fix buttons
+    detailView.querySelectorAll(".cmd-copy-btn").forEach(btn => {
+      btn.addEventListener("click", e => { e.stopPropagation(); copyToClipboard(btn.dataset.cmd, btn); });
+    });
+    detailView.querySelectorAll(".cmd-run-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const fb = $("detailFixBtn") || btn;
+        openFixModal(btn.dataset.cmd, fb);
+      });
+    });
+    const fixBtn = $("detailFixBtn");
+    if(fixBtn && !isFixed){
+      fixBtn.addEventListener("click", () => openFixModal(fixBtn.dataset.cmd, fixBtn));
+    }
+
+    // events
+    const evtSection = $("detailEventsSection");
+    const evtToggle = $("detailEventsToggle");
+    const evtBody = $("detailEventsBody");
+    if(events.length){
+      evtSection.style.display = "";
+      $("detailEventsLabel").textContent = `Show cluster events (${events.length})`;
+      evtBody.innerHTML = events.map(e =>
+        `<div class="evt-row"><span class="evt-time">${esc(e.time)}</span><span class="evt-reason">${esc(e.reason)}</span><span class="evt-msg">${esc(e.message)}</span></div>`
+      ).join("");
+      evtBody.classList.remove("open");
+      evtToggle.classList.remove("open");
+      evtToggle.onclick = () => {
+        const isOpen = evtBody.classList.toggle("open");
+        evtToggle.classList.toggle("open", isOpen);
+        $("detailEventsLabel").textContent = (isOpen ? "Hide" : "Show") + ` cluster events (${events.length})`;
+      };
+    } else {
+      evtSection.style.display = "none";
+    }
+
+    // reset console
+    consoleOut.innerHTML = '<div class="con-dim">Run a fix command or type kubectl commands below...</div>';
+    consoleIn.value = "";
+    if(cmds.length) consoleIn.placeholder = cmds[0];
+
+    window.scrollTo({ top: 0 });
+  }
+
+  $("detailBack").addEventListener("click", showListView);
+
+  /* ---- fix modal ---- */
+  function openFixModal(cmd, fixBtn){
+    pendingFixCmd = cmd;
+    pendingFixBtn = fixBtn;
+    $("modalCmd").textContent = cmd;
+    $("modalOverlay").classList.add("open");
+  }
+
+  $("modalCancel").addEventListener("click", () => {
+    $("modalOverlay").classList.remove("open");
+    pendingFixCmd = null; pendingFixBtn = null;
+  });
+  $("modalOverlay").addEventListener("click", e => {
+    if(e.target === $("modalOverlay")){
+      $("modalOverlay").classList.remove("open");
+      pendingFixCmd = null; pendingFixBtn = null;
+    }
+  });
+
+  async function executeCommand(cmd, fixBtn){
+    if(fixBtn){
+      fixBtn.disabled = true;
+      fixBtn.innerHTML = '<span class="spinner"></span> Executing...';
+    }
+
+    appendConsole(`$ ${cmd}`, "con-info");
+
+    try{
+      const resp = await fetch("/api/fix", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ command: cmd })
+      });
+      const data = await resp.json();
+
+      if(data.output) appendConsole(data.output, data.success ? "" : "con-error");
+
+      if(data.success){
+        appendConsole("Command completed successfully.", "con-success");
+        if(fixBtn){
+          fixBtn.innerHTML = CHECK_SVG + ' Fixed';
+          if(currentDetailIdx >= 0){
+            fixedSet.add(currentDetailIdx);
+            const row = issueList.querySelector(`[data-idx="${currentDetailIdx}"]`);
+            if(row) row.classList.add("fixed-row");
+          }
+        }
+        const resultEl = $("detailFixResult");
+        if(resultEl){
+          resultEl.innerHTML = `<div class="fix-result success"><strong>Fix applied successfully</strong>${data.output ? `<pre>${esc(data.output)}</pre>` : ""}</div>`;
+        }
+      } else {
+        appendConsole(`Exit code: ${data.exit_code}`, "con-error");
+        if(fixBtn){
+          fixBtn.disabled = false;
+          fixBtn.innerHTML = PLAY_SVG + ' Retry Fix';
+        }
+        const resultEl = $("detailFixResult");
+        if(resultEl){
+          resultEl.innerHTML = `<div class="fix-result failure"><strong>Fix failed (exit code ${data.exit_code})</strong>${data.output ? `<pre>${esc(data.output)}</pre>` : ""}</div>`;
+        }
+      }
+    } catch(err){
+      appendConsole("Network error: " + err.message, "con-error");
+      if(fixBtn){
+        fixBtn.disabled = false;
+        fixBtn.innerHTML = PLAY_SVG + ' Retry Fix';
+      }
+    }
+  }
+
+  $("modalConfirm").addEventListener("click", async () => {
+    if(!pendingFixCmd) return;
+    const cmd = pendingFixCmd;
+    const fixBtn = pendingFixBtn;
+    $("modalOverlay").classList.remove("open");
+    await executeCommand(cmd, fixBtn);
+    pendingFixCmd = null; pendingFixBtn = null;
+  });
+
+  /* ---- console ---- */
+  function appendConsole(text, cls){
+    const first = consoleOut.querySelector(".con-dim");
+    if(first && first.parentNode === consoleOut) first.remove();
+
+    const div = document.createElement("div");
+    if(cls) div.className = cls;
+    div.textContent = text;
+    consoleOut.appendChild(div);
+    consoleOut.scrollTop = consoleOut.scrollHeight;
+  }
+
+  consoleIn.addEventListener("keydown", async (e) => {
+    if(e.key !== "Enter") return;
+    const cmd = consoleIn.value.trim();
+    if(!cmd) return;
+    consoleIn.value = "";
+    await executeCommand(cmd, null);
+  });
+
+  /* ---- render list row ---- */
+  function renderRow(d, idx){
+    const cls = classify(d.reason);
+    const excerpt = getExcerpt(d.diagnosis, 80);
+    const isFixed = fixedSet.has(idx);
+    const searchText = (d.pod_name + " " + d.reason + " " + d.diagnosis + " " + d.message).toLowerCase();
+
+    const row = document.createElement("div");
+    row.className = "issue-row" + (isFixed ? " fixed-row" : "");
+    row.dataset.idx = idx;
+    row.dataset.cls = cls;
+    row.dataset.text = searchText;
+    row.innerHTML = `
+      <span class="severity-dot ${cls}"></span>
+      <span class="badge ${cls}">${esc(d.reason)}</span>
+      <div class="issue-info">
+        <span class="issue-pod">${esc(d.pod_name)}</span>
+        <span class="issue-excerpt">${esc(excerpt)}</span>
+      </div>
+      <span class="issue-time" title="${fullTime(d.timestamp)}">${timeAgo(d.timestamp)}</span>
+      <span class="issue-fixed-tag">${CHECK_SVG} Fixed</span>
+      <span class="issue-arrow">${ARROW_SVG}</span>
+    `;
+    row.addEventListener("click", () => showDetailView(idx));
+    return row;
+  }
+
+  /* ---- filter/search ---- */
+  function applyFilters(){
+    const rows = issueList.querySelectorAll(".issue-row");
+    let visible = 0;
+    rows.forEach(row => {
+      const matchFilter = activeFilter === "all" || row.dataset.cls === activeFilter;
+      const matchSearch = !searchQuery || row.dataset.text.includes(searchQuery);
+      const show = matchFilter && matchSearch;
+      row.classList.toggle("hidden", !show);
+      if(show) visible++;
+    });
+    const hasData = allDiagnoses.length > 0;
+    empty.style.display = (hasData && visible > 0) ? "none" : "";
+    if(hasData && visible === 0){
+      $("emptyTitle").textContent = "No matches";
+      $("emptySub").textContent = "Try adjusting your search or filter.";
+    }
+  }
+
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeFilter = chip.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  searchIn.addEventListener("input", () => {
+    searchQuery = searchIn.value.toLowerCase().trim();
+    applyFilters();
+  });
+
+  /* ---- toasts ---- */
+  function showToast(d, idx){
+    const cls = classify(d.reason);
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerHTML = `<span class="toast-dot ${cls}"></span><span><strong>${esc(d.pod_name)}</strong> &mdash; ${esc(d.reason)}</span>`;
+    toast.addEventListener("click", () => {
+      showDetailView(idx);
+      toast.remove();
+    });
+    toasts.appendChild(toast);
+    setTimeout(() => { toast.style.animation="toastOut .25s ease-in forwards"; setTimeout(()=>toast.remove(),300); }, 5000);
+  }
+
+  /* ---- sound ---- */
+  function playNotif(){
+    if(!soundEnabled) return;
+    try{
+      const ctx = new (window.AudioContext||window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 520; osc.type = "sine";
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+    } catch(e){}
+  }
+
+  $("soundBtn").addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    $("soundBtn").style.color = soundEnabled ? "var(--blue)" : "";
+  });
+
+  /* ---- add diagnosis ---- */
+  function addDiagnosis(d, isHistory){
+    const idx = allDiagnoses.length;
+    allDiagnoses.push(d);
+    podSet.add(d.pod_name);
+
+    const row = renderRow(d, idx);
+    const emptyEl = issueList.querySelector(".empty-state");
+    if(isHistory){
+      if(emptyEl) emptyEl.before(row);
+      else issueList.appendChild(row);
+    } else {
+      issueList.prepend(row);
+    }
+
+    updateMetrics();
+    empty.style.display = "none";
+
+    if(!isHistory){
+      showToast(d, idx);
+      playNotif();
+    }
+    applyFilters();
+  }
+
+  /* ---- time updater ---- */
+  setInterval(() => {
+    issueList.querySelectorAll(".issue-row").forEach(row => {
+      const idx = parseInt(row.dataset.idx);
+      const d = allDiagnoses[idx];
+      if(d){
+        const timeEl = row.querySelector(".issue-time");
+        if(timeEl) timeEl.textContent = timeAgo(d.timestamp);
+      }
+    });
+  }, 30000);
+
+  /* ---- load history ---- */
+  fetch("/api/history")
+    .then(r => r.json())
+    .then(arr => { arr.forEach(d => addDiagnosis(d, true)); })
+    .catch(()=>{});
+
+  /* ---- SSE ---- */
+  function connect(){
+    const es = new EventSource("/api/stream");
+    es.addEventListener("diagnosis", e => addDiagnosis(JSON.parse(e.data), false));
+    es.addEventListener("status", e => {
+      const s = JSON.parse(e.data);
+      if(s.state === "watching"){ dot.style.background="var(--green)"; dot.className="dot pulse"; statusTx.textContent="watching"; }
+      else if(s.state === "disconnected"){ dot.style.background="var(--amber)"; dot.className="dot"; statusTx.textContent="disconnected";
+        if(!allDiagnoses.length){ $("emptyTitle").textContent="No cluster connected"; $("emptySub").textContent=s.error||"Waiting for kubeconfig..."; }
+      } else { dot.style.background="var(--amber)"; dot.className="dot"; statusTx.textContent=s.state; }
+    });
+    es.onopen = () => { dot.style.background="var(--green)"; dot.className="dot pulse"; statusTx.textContent="connected"; };
+    es.onerror = () => { dot.style.background="var(--red)"; dot.className="dot"; statusTx.textContent="reconnecting"; };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>
