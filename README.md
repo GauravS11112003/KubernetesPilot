@@ -1,37 +1,81 @@
+<div align="center">
+
 # KubePilot
 
-![KubePilot Dashboard](Assets/demo.png)
+### AI-Powered Kubernetes Troubleshooting Agent
 
-AI-driven Kubernetes troubleshooting agent that watches for failing pods, collects their events, and uses a large language model to explain the root cause and suggest a fix.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-1.25%2B-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.3-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-AI_Diagnosis-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Diagnosis reports are optionally persisted to a GCS bucket for historical auditing.
+**Watches for failing pods. Collects events. Explains the root cause. Suggests the fix.**
+
+All powered by Google Gemini — in your terminal or a real-time web dashboard.
+
+<br/>
+
+<img src="Assets/demo.png" alt="KubePilot Dashboard" width="100%" style="border-radius: 10px;" />
+
+<br/>
+
+</div>
+
+---
+
+## Why KubePilot?
+
+Debugging Kubernetes failures usually means toggling between `kubectl describe`, `kubectl logs`, and Stack Overflow. **KubePilot automates the entire workflow**:
+
+1. **Detects** failing pods in real time via the Kubernetes Watch API
+2. **Collects** all related cluster events for the pod
+3. **Diagnoses** the root cause using Google Gemini with a targeted SRE prompt
+4. **Suggests** a concrete `kubectl` fix command you can run immediately
+5. **Persists** every diagnosis report to a GCS bucket for audit trails
+
+It catches `CrashLoopBackOff`, `ImagePullBackOff`, `ErrImagePull`, `RunContainerError`, `CreateContainerConfigError`, and `InvalidImageName` — the failures that eat up the most on-call time.
+
+---
+
+## Two Ways to Use It
+
+| | CLI Mode | Web Dashboard |
+|---|---|---|
+| **Run** | `python main.py` | `python dashboard.py` |
+| **Output** | Rich-formatted terminal panels | Real-time browser UI at `:8080` |
+| **Streaming** | Inline pod watch events | Server-Sent Events (SSE) |
+| **Fix commands** | Copy from terminal | One-click **Fix Now** button |
+| **Live pod overview** | — | Sidebar with pod health status |
+| **Built-in console** | — | Run `kubectl` commands from the browser |
+
+---
 
 ## Architecture
 
 ```
-                                        ┌────────────────────────────────┐
-┌──────────────┐     watch stream       │  KubePilot Engine              │
-│  Kind Cluster│ ──────────────────▸    │                                │
-│  (local K8s) │                        │  detect failure → fetch events │
-└──────────────┘                        │  → build prompt → Gemini      │
-                                        │       │                       │
-                                        │       ▾                       │
-                                        │  ┌──────────┐  ┌───────────┐ │
-                                        │  │ CLI (Rich)│  │ Dashboard │ │
-                                        │  │ main.py   │  │ :8080     │ │
-                                        │  └──────────┘  └─────┬─────┘ │
-                                        │       │              │ SSE    │
-                                        │       ▾              ▾        │
-                                        │  GCS upload    Browser UI     │
-                                        └────────────────────────────────┘
+                                    ┌────────────────────────────────┐
+┌──────────────┐   watch stream    │  KubePilot Engine              │
+│  Kind Cluster│ ────────────────▸ │                                │
+│  (local K8s) │                   │  detect failure → fetch events │
+└──────────────┘                   │  → build prompt → Gemini AI   │
+                                   │       │                       │
+                                   │       ▾                       │
+                                   │  ┌──────────┐  ┌───────────┐ │
+                                   │  │ CLI (Rich)│  │ Dashboard │ │
+                                   │  │ main.py   │  │ :8080     │ │
+                                   │  └──────────┘  └─────┬─────┘ │
+                                   │       │              │ SSE    │
+                                   │       ▾              ▾        │
+                                   │  GCS upload    Browser UI     │
+                                   └────────────────────────────────┘
 ```
 
-Two interfaces share the same detection engine:
+---
 
-- **CLI** (`python main.py`) — Rich-formatted terminal output.
-- **Dashboard** (`python dashboard.py`) — real-time web UI at `http://localhost:8080` using FastAPI + Server-Sent Events.
+## Quick Start
 
-## Prerequisites
+### Prerequisites
 
 | Tool | Version | Purpose |
 |------|---------|---------|
@@ -42,12 +86,9 @@ Two interfaces share the same detection engine:
 | Python | 3.10+ | Agent runtime |
 | gcloud CLI | latest | GCP authentication |
 
-You also need:
+You also need a [Gemini API key](https://aistudio.google.com/apikey) and a GCP project with billing enabled + Cloud Storage API active.
 
-- A **Gemini API key** (https://aistudio.google.com/apikey).
-- A **GCP project** with billing enabled and the Cloud Storage API active.
-
-## Quick Start
+---
 
 ### 1. Authenticate with GCP
 
@@ -58,12 +99,11 @@ gcloud auth application-default login
 ### 2. Provision infrastructure
 
 ```bash
-cd KubernetesPilot
 terraform init
 terraform apply -var="gcp_project_id=YOUR_GCP_PROJECT_ID"
 ```
 
-Terraform creates a local Kind cluster and a GCS bucket. Note the `gcs_bucket_name` in the output.
+This creates a local **Kind cluster** and a **GCS bucket** for diagnosis persistence. Note the `gcs_bucket_name` output.
 
 ### 3. Verify the cluster
 
@@ -71,19 +111,20 @@ Terraform creates a local Kind cluster and a GCS bucket. Note the `gcs_bucket_na
 kubectl cluster-info --context kind-kubepilot
 ```
 
-### 4. Deploy the broken workloads
+### 4. Deploy broken workloads
 
 ```bash
 kubectl apply -f broken-deployment.yaml
-kubectl create deployment bad-image --image=nginx:doesnotexist -n default
 ```
 
-This creates two intentionally failing deployments:
+This spins up two intentionally failing deployments:
 
-- **broken-nginx** — uses a non-existent image tag (`nginx:super-latest-broken`) → `ImagePullBackOff`
-- **crashloop-app** — runs `exit 1` in a loop → `CrashLoopBackOff`
+| Deployment | Image | Expected Failure |
+|---|---|---|
+| `broken-nginx` | `nginx:super-latest-broken` | `ImagePullBackOff` |
+| `crashloop-app` | `busybox:1.36` (runs `exit 1`) | `CrashLoopBackOff` |
 
-### 5. Install Python dependencies
+### 5. Install dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -91,48 +132,72 @@ pip install -r requirements.txt
 
 ### 6. Set environment variables
 
-**Linux / macOS:**
+<details>
+<summary><strong>Linux / macOS</strong></summary>
 
 ```bash
 export GEMINI_API_KEY="your-gemini-api-key"
 export GCS_BUCKET_NAME="$(terraform output -raw gcs_bucket_name)"
 ```
 
-**PowerShell:**
+</details>
+
+<details>
+<summary><strong>PowerShell</strong></summary>
 
 ```powershell
 $env:GEMINI_API_KEY = "your-gemini-api-key"
 $env:GCS_BUCKET_NAME = (terraform output -raw gcs_bucket_name)
 ```
 
-`GCS_BUCKET_NAME` is optional — if omitted the agent still runs but skips cloud uploads.
+</details>
+
+> `GCS_BUCKET_NAME` is optional — if omitted, the agent still runs but skips cloud uploads.
 
 ### 7. Run KubePilot
 
-**Option A — CLI mode:**
+**Option A — CLI**
 
 ```bash
 python main.py
 ```
 
-The agent streams pod events and prints a diagnosis for each failure it detects. Press **Ctrl+C** to stop.
-
-**Option B — Web dashboard:**
+**Option B — Web Dashboard**
 
 ```bash
 python dashboard.py
 ```
 
-Open `http://localhost:8080` in your browser. Diagnosis cards appear in real time as failures are detected. The dashboard uses Server-Sent Events so there is no need to refresh.
+Then open [http://localhost:8080](http://localhost:8080) in your browser. Diagnosis cards stream in live as failures are detected — no refresh needed.
+
+---
 
 ## Configuration
 
 | Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `GEMINI_API_KEY` | yes | — | Google Gemini API key |
-| `GCS_BUCKET_NAME` | no | — | GCS bucket for diagnosis reports |
-| `KUBEPILOT_NAMESPACE` | no | `default` | Namespace to watch |
-| `GEMINI_MODEL` | no | `gemini-2.0-flash` | Model used for diagnosis |
+|---|---|---|---|
+| `GEMINI_API_KEY` | Yes | — | Google Gemini API key |
+| `GCS_BUCKET_NAME` | No | — | GCS bucket for persisting diagnosis reports |
+| `KUBEPILOT_NAMESPACE` | No | `default` | Kubernetes namespace to watch |
+| `GEMINI_MODEL` | No | `gemini-2.0-flash` | Gemini model for AI diagnosis |
+
+---
+
+## Project Structure
+
+```
+KubernetesPilot/
+├── main.py                 # CLI agent — Rich terminal output
+├── dashboard.py            # Web dashboard — FastAPI + SSE
+├── static/
+│   └── index.html          # Dashboard frontend (single-page app)
+├── main.tf                 # Terraform — Kind cluster + GCS bucket
+├── broken-deployment.yaml  # Sample failing workloads for testing
+├── requirements.txt        # Python dependencies
+└── .env                    # Local env vars (git-ignored)
+```
+
+---
 
 ## Cleanup
 
@@ -141,19 +206,55 @@ kubectl delete -f broken-deployment.yaml
 terraform destroy -var="gcp_project_id=YOUR_GCP_PROJECT_ID"
 ```
 
+---
+
 ## Troubleshooting
 
-**`Could not locate a valid kubeconfig`**
+<details>
+<summary><code>Could not locate a valid kubeconfig</code></summary>
+
 Ensure the Kind cluster is running (`kind get clusters`) and `~/.kube/config` contains the `kind-kubepilot` context.
 
-**`GEMINI_API_KEY is not set`**
-Export the variable in the same shell session where you run `main.py`.
+</details>
 
-**`GCS init skipped`**
-Run `gcloud auth application-default login` and confirm the Cloud Storage API is enabled in your project.
+<details>
+<summary><code>GEMINI_API_KEY is not set</code></summary>
 
-**Docker not running**
+Export the variable in the same shell session where you run `main.py` or `dashboard.py`.
+
+</details>
+
+<details>
+<summary><code>GCS init skipped</code></summary>
+
+Run `gcloud auth application-default login` and confirm the Cloud Storage API is enabled in your GCP project.
+
+</details>
+
+<details>
+<summary><strong>Docker not running</strong></summary>
+
 Kind requires Docker. Start Docker Desktop (or the Docker daemon) before running `terraform apply`.
 
-**Dashboard port already in use**
-Change the port with `uvicorn dashboard:app --host 0.0.0.0 --port 9090`.
+</details>
+
+<details>
+<summary><strong>Dashboard port already in use</strong></summary>
+
+Run on an alternate port:
+
+```bash
+uvicorn dashboard:app --host 0.0.0.0 --port 9090
+```
+
+</details>
+
+---
+
+<div align="center">
+
+**Built with [Kubernetes](https://kubernetes.io/) + [Google Gemini](https://ai.google.dev/) + [FastAPI](https://fastapi.tiangolo.com/) + [Rich](https://rich.readthedocs.io/) + [Terraform](https://www.terraform.io/)**
+
+MIT License &copy; 2026 Gaurav Shrivastava
+
+</div>

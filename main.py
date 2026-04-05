@@ -39,7 +39,7 @@ FAILURE_REASONS = frozenset(
 )
 
 NAMESPACE = os.getenv("KUBEPILOT_NAMESPACE", "default")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GCS_BUCKET_NAME: Optional[str] = os.getenv("GCS_BUCKET_NAME")
 
 
